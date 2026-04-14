@@ -9,7 +9,7 @@ This phase converts a technical epic into concrete, numbered task files with dep
 **Trigger**: User wants to break an epic into actionable tasks.
 
 ### Preflight
-- Verify `.claude/epics/<name>/epic.md` exists with valid frontmatter.
+- Verify `.qwen/epics/<name>/epic.md` exists with valid frontmatter.
 - If numbered task files (001.md, 002.md...) already exist in the epic directory, list them and confirm deletion before recreating.
 - If epic status is "completed", warn the user before proceeding.
 
@@ -38,7 +38,7 @@ Task:
   prompt: |
     Create task files for epic: <name>
     Tasks to create: [list 3-4 tasks]
-    Save to: .claude/epics/<name>/001.md, 002.md, etc.
+    Save to: .qwen/epics/<name>/001.md, 002.md, etc.
     Follow the task file format exactly.
     Return: list of files created.
 ```
@@ -51,7 +51,7 @@ name: <Task Title>
 status: open
 created: <run: date -u +"%Y-%m-%dT%H:%M:%SZ">
 updated: <same as created>
-github: (will be set on sync)
+gitlab: (will be set on sync)
 depends_on: []
 parallel: true
 conflicts_with: []
@@ -78,7 +78,7 @@ conflicts_with: []
 - [ ] Code reviewed
 ```
 
-**Numbering**: sequential 001.md, 002.md, etc. Tasks are renamed to GitHub issue numbers after sync — do not hard-code dependencies by filename, use the `depends_on` array.
+**Numbering**: sequential 001.md, 002.md, etc. Tasks are renamed to GitLab issue numbers after sync — do not hard-code dependencies by filename, use the `depends_on` array.
 
 ### After Creating All Tasks
 
@@ -95,7 +95,7 @@ Sequential tasks: N
 Estimated total effort: N hours
 ```
 
-**After completion**: Confirm "✅ Created N tasks for epic: <name>" and suggest: "Ready to push to GitHub? Say: sync the <name> epic"
+**After completion**: Confirm "✅ Created N tasks for epic: <name>" and suggest: "Ready to push to GitLab? Say: sync the <name> epic"
 
 ---
 

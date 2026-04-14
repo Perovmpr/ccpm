@@ -12,14 +12,14 @@ echo "Getting epic..."
 echo ""
 echo ""
 
-epic_dir=".claude/epics/$epic_name"
+epic_dir=".qwen/epics/$epic_name"
 epic_file="$epic_dir/epic.md"
 
 if [ ! -f "$epic_file" ]; then
   echo "❌ Epic not found: $epic_name"
   echo ""
   echo "Available epics:"
-  for dir in .claude/epics/*/; do
+  for dir in .qwen/epics/*/; do
     [ -d "$dir" ] && echo "  • $(basename "$dir")"
   done
   exit 1
@@ -33,13 +33,13 @@ echo ""
 # Extract metadata
 status=$(grep "^status:" "$epic_file" | head -1 | sed 's/^status: *//')
 progress=$(grep "^progress:" "$epic_file" | head -1 | sed 's/^progress: *//')
-github=$(grep "^github:" "$epic_file" | head -1 | sed 's/^github: *//')
+gitlab=$(grep "^gitlab:" "$epic_file" | head -1 | sed 's/^gitlab: *//')
 created=$(grep "^created:" "$epic_file" | head -1 | sed 's/^created: *//')
 
 echo "📊 Metadata:"
 echo "  Status: ${status:-planning}"
 echo "  Progress: ${progress:-0%}"
-[ -n "$github" ] && echo "  GitHub: $github"
+[ -n "$gitlab" ] && echo "  GitLab: $gitlab"
 echo "  Created: ${created:-unknown}"
 echo ""
 
@@ -85,7 +85,7 @@ echo "  Closed: $closed_count"
 echo ""
 echo "💡 Actions:"
 [ $task_count -eq 0 ] && echo "  • Decompose into tasks: /pm:epic-decompose $epic_name"
-[ -z "$github" ] && [ $task_count -gt 0 ] && echo "  • Sync to GitHub: /pm:epic-sync $epic_name"
-[ -n "$github" ] && [ "$status" != "completed" ] && echo "  • Start work: /pm:epic-start $epic_name"
+[ -z "$gitlab" ] && [ $task_count -gt 0 ] && echo "  • Sync to GitLab: /pm:epic-sync $epic_name"
+[ -n "$gitlab" ] && [ "$status" != "completed" ] && echo "  • Start work: /pm:epic-start $epic_name"
 
 exit 0

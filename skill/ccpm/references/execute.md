@@ -1,6 +1,6 @@
 # Execute — Start Building with Parallel Agents
 
-This phase covers analyzing GitHub issues for parallel work streams and launching agents to execute them.
+This phase covers analyzing GitLab issues for parallel work streams and launching agents to execute them.
 
 ---
 
@@ -9,12 +9,12 @@ This phase covers analyzing GitHub issues for parallel work streams and launchin
 **Trigger**: User wants to understand how to parallelize work on an issue before starting.
 
 ### Preflight
-- Find the local task file: check `.claude/epics/*/<N>.md` first, then search for `github:.*issues/<N>` in frontmatter.
+- Find the local task file: check `.qwen/epics/*/<N>.md` first, then search for `gitlab:.*issues/<N>` in frontmatter.
 - If not found: "❌ No local task for issue #<N>. Run a sync first."
 
 ### Process
 
-Get issue details: `gh issue view <N> --json title,body,labels`
+Get issue details: `glab issue view <N>`
 
 Read the local task file fully. Identify independent work streams by asking:
 - Which files will be created/modified?
@@ -28,7 +28,7 @@ Read the local task file fully. Identify independent work streams by asking:
 - UI Layer: components, pages, styles
 - Test Layer: unit tests, integration tests
 
-Create `.claude/epics/<epic_name>/<N>-analysis.md`:
+Create `.qwen/epics/<epic_name>/<N>-analysis.md`:
 
 ```markdown
 ---
@@ -46,15 +46,15 @@ parallelization_factor: <1.0-5.0>
 ## Parallel Streams
 
 ### Stream A: <Name>
-**Scope**: 
-**Files**: 
+**Scope**:
+**Files**:
 **Can Start**: immediately
-**Estimated Hours**: 
+**Estimated Hours**:
 **Dependencies**: none
 
 ### Stream B: <Name>
-**Scope**: 
-**Files**: 
+**Scope**:
+**Files**:
 **Can Start**: after Stream A
 **Dependencies**: Stream A
 
@@ -78,12 +78,12 @@ parallelization_factor: <1.0-5.0>
 
 ## Starting an Issue
 
-**Trigger**: User wants to begin work on a specific GitHub issue.
+**Trigger**: User wants to begin work on a specific GitLab issue.
 
 ### Preflight
-1. Verify issue exists and is open: `gh issue view <N> --json state,title,labels,body`
+1. Verify issue exists and is open: `glab issue view <N>`
 2. Find local task file (as above).
-3. Check for analysis file: `.claude/epics/*/<N>-analysis.md` — if missing, run analysis first (or do both in sequence: analyze then start).
+3. Check for analysis file: `.qwen/epics/*/<N>-analysis.md` — if missing, run analysis first (or do both in sequence: analyze then start).
 4. Verify epic worktree exists: `git worktree list | grep "epic-<name>"` — if not: "❌ No worktree. Sync the epic first."
 
 ### Process
@@ -92,11 +92,11 @@ parallelization_factor: <1.0-5.0>
 
 **Step 2 — Create progress tracking:**
 ```bash
-mkdir -p .claude/epics/<epic>/updates/<N>
+mkdir -p .qwen/epics/<epic>/updates/<N>
 current_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 ```
 
-Create `.claude/epics/<epic>/updates/<N>/stream-<X>.md` for each stream:
+Create `.qwen/epics/<epic>/updates/<N>/stream-<X>.md` for each stream:
 ```markdown
 ---
 issue: <N>
@@ -117,31 +117,31 @@ Task:
   subagent_type: "general-purpose"
   prompt: |
     You are working on Issue #<N> in the epic worktree at: ../epic-<name>/
-    
+
     Your stream: <stream_name>
     Your scope — files to modify: <file_patterns>
     Work to complete: <stream_description>
-    
+
     Instructions:
-    1. Read full task from: .claude/epics/<epic>/<N>.md
-    2. Read analysis from: .claude/epics/<epic>/<N>-analysis.md
+    1. Read full task from: .qwen/epics/<epic>/<N>.md
+    2. Read analysis from: .qwen/epics/<epic>/<N>-analysis.md
     3. Work ONLY in your assigned files
     4. Commit frequently: "Issue #<N>: <specific change>"
-    5. Update progress in: .claude/epics/<epic>/updates/<N>/stream-<X>.md
+    5. Update progress in: .qwen/epics/<epic>/updates/<N>/stream-<X>.md
     6. If you need to touch files outside your scope, note it in your progress file and wait
     7. Never use --force on git operations
-    
+
     Complete your stream's work and mark status: completed when done.
 ```
 
 Streams with unmet dependencies are queued — launch them as their dependencies complete.
 
-**Step 4 — Assign on GitHub:**
+**Step 4 — Assign on GitLab:**
 ```bash
-gh issue edit <N> --add-assignee @me --add-label "in-progress"
+glab issue update <N> --assignee @me --label "in-progress"
 ```
 
-**Step 5 — Create execution status file** at `.claude/epics/<epic>/updates/<N>/execution.md`:
+**Step 5 — Create execution status file** at `.qwen/epics/<epic>/updates/<N>/execution.md`:
 ```markdown
 ## Active Streams
 - Stream A: <name> — Started <time>
@@ -163,7 +163,7 @@ Launched N agents:
   Stream B: <name> ✓ Started
   Stream C: <name> ⏸ Waiting (depends on A)
 
-Monitor: check progress in .claude/epics/<epic>/updates/<N>/
+Monitor: check progress in .qwen/epics/<epic>/updates/<N>/
 Sync updates: "sync issue <N>"
 ```
 
@@ -174,13 +174,13 @@ Sync updates: "sync issue <N>"
 **Trigger**: User wants to launch parallel agents across all ready issues in an epic at once.
 
 ### Preflight
-- Verify `.claude/epics/<name>/epic.md` exists and has a `github:` field (i.e., it's been synced).
+- Verify `.qwen/epics/<name>/epic.md` exists and has a `gitlab:` field (i.e., it's been synced).
 - Check for uncommitted changes: `git status --porcelain` — block if dirty.
 - Verify epic branch exists: `git branch -a | grep "epic/<name>"`
 
 ### Process
 
-**Step 1 — Read all task files** in `.claude/epics/<name>/`. Parse frontmatter for `status`, `depends_on`, `parallel`.
+**Step 1 — Read all task files** in `.qwen/epics/<name>/`. Parse frontmatter for `status`, `depends_on`, `parallel`.
 
 **Step 2 — Categorize tasks:**
 - Ready: status=open, no unmet depends_on
@@ -192,7 +192,7 @@ Sync updates: "sync issue <N>"
 
 **Step 4 — Launch agents** for all ready tasks following the same per-issue agent launch pattern above.
 
-**Step 5 — Create/update** `.claude/epics/<name>/execution-status.md` with all active agents and queued issues.
+**Step 5 — Create/update** `.qwen/epics/<name>/execution-status.md` with all active agents and queued issues.
 
 **Step 6 — As agents complete**, check if blocked issues are now unblocked and launch those agents.
 

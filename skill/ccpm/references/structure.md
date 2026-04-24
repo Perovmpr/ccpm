@@ -51,7 +51,7 @@ name: <Task Title>
 status: open
 created: <run: date -u +"%Y-%m-%dT%H:%M:%SZ">
 updated: <same as created>
-github: (will be set on sync)
+gitlab: (will be set on sync)
 depends_on: []
 parallel: true
 conflicts_with: []
@@ -78,7 +78,7 @@ conflicts_with: []
 - [ ] Code reviewed
 ```
 
-**Numbering**: sequential 001.md, 002.md, etc. Tasks are renamed to GitHub issue numbers after sync — do not hard-code dependencies by filename, use the `depends_on` array.
+**Numbering**: sequential 001.md, 002.md, etc. Tasks are renamed to GitLab issue IIDs after sync — do not hard-code dependencies by filename, use the `depends_on` array.
 
 ### After Creating All Tasks
 
@@ -95,7 +95,7 @@ Sequential tasks: N
 Estimated total effort: N hours
 ```
 
-**After completion**: Confirm "✅ Created N tasks for epic: <name>" and suggest: "Ready to push to GitHub? Say: sync the <name> epic"
+**After completion**: Confirm "✅ Created N tasks for epic: <name>" and suggest: "Ready to push to GitLab? Say: sync the <name> epic"
 
 ---
 

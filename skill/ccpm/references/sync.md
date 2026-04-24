@@ -1,21 +1,24 @@
-# Sync — Push to GitHub & Track Progress
+# Sync — Push to GitLab & Track Progress
 
-This phase covers pushing local epics/tasks to GitHub as issues, syncing progress as comments, and closing issues when work is done.
+This phase covers pushing local epics/tasks to GitLab as issues, syncing progress as comments, and closing issues when work is done.
 
 ---
 
 ## Repository Safety Check
 
-**Always run this before any GitHub write operation:**
+**Always run this before any GitLab write operation:**
 
 ```bash
 remote_url=$(git remote get-url origin 2>/dev/null || echo "")
-if [[ "$remote_url" == *"automazeio/ccpm"* ]]; then
+# Extract host dynamically — works for gitlab.com AND self-hosted instances
+GITLAB_HOST=$(echo "$remote_url" | sed -E 's|https?://([^/]+)/.*|\1|' | sed -E 's|git@([^:]+):.*|\1|')
+REPO=$(echo "$remote_url" | sed -E 's|https?://[^/]+/||' | sed -E 's|git@[^:]+:||' | sed 's|\.git$||')
+
+if [[ "$REPO" == "automazeio/ccpm" ]]; then
   echo "❌ Cannot sync to the CCPM template repository."
-  echo "Update remote: git remote set-url origin https://github.com/YOUR/REPO.git"
+  echo "Update remote: git remote set-url origin https://$GITLAB_HOST/YOUR_GROUP/YOUR_REPO.git"
   exit 1
 fi
-REPO=$(echo "$remote_url" | sed 's|.*github.com[:/]||' | sed 's|\.git$||')
 ```
 
 ---
@@ -35,22 +38,14 @@ REPO=$(echo "$remote_url" | sed 's|.*github.com[:/]||' | sed 's|\.git$||')
 Strip frontmatter from epic.md, then:
 ```bash
 sed '1,/^---$/d; 1,/^---$/d' .claude/epics/<name>/epic.md > /tmp/epic-body.md
-epic_number=$(gh issue create \
+epic_number=$(glab issue create \
   --repo "$REPO" \
   --title "Epic: <name>" \
-  --body-file /tmp/epic-body.md \
-  --label "epic,epic:<name>,feature" \
-  --json number -q .number)
+  --description "$(cat /tmp/epic-body.md)" \
+  --label "epic,epic:<name>,feature" | grep -oE '[0-9]+$')
 ```
 
-**Step 2 — Create task sub-issues:**
-
-Check if `gh-sub-issue` extension is available:
-```bash
-if gh extension list | grep -q "yahsan2/gh-sub-issue"; then
-  use_subissues=true
-fi
-```
+**Step 2 — Create task issues:**
 
 For <5 tasks: create sequentially.
 For ≥5 tasks: use parallel Task agents (3-4 tasks per batch).
@@ -58,14 +53,11 @@ For ≥5 tasks: use parallel Task agents (3-4 tasks per batch).
 Per task:
 ```bash
 sed '1,/^---$/d; 1,/^---$/d' <task_file> > /tmp/task-body.md
-task_number=$(gh issue create \
+task_number=$(glab issue create \
   --repo "$REPO" \
   --title "<task_name>" \
-  --body-file /tmp/task-body.md \
-  --label "task,epic:<name>" \
-  --json number -q .number)
-# or with sub-issues:
-# gh sub-issue create --parent $epic_number ...
+  --description "$(cat /tmp/task-body.md)" \
+  --label "task,epic:<name>" | grep -oE '[0-9]+$')
 ```
 
 **Step 3 — Rename task files and update references:**
@@ -81,9 +73,9 @@ mv 001.md <new_num>.md
 **Step 4 — Update frontmatter:**
 ```bash
 current_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-# Update github: and updated: fields in epic.md and each task file
-github_url="https://github.com/$REPO/issues/<number>"
-sed -i.bak "/^github:/c\\github: $github_url" <file>
+# Update gitlab: and updated: fields in epic.md and each task file
+gitlab_url="https://$GITLAB_HOST/$REPO/-/issues/<number>"
+sed -i.bak "/^gitlab:/c\\gitlab: $gitlab_url" <file>
 sed -i.bak "/^updated:/c\\updated: $current_date" <file>
 rm <file>.bak
 ```
@@ -94,20 +86,20 @@ git checkout main && git pull origin main
 git worktree add ../epic-<name> -b epic/<name>
 ```
 
-**Step 6 — Create github-mapping.md:**
+**Step 6 — Create gitlab-mapping.md:**
 ```markdown
-# GitHub Issue Mapping
-Epic: #<N> - https://github.com/<repo>/issues/<N>
+# GitLab Issue Mapping
+Epic: #<N> - https://$GITLAB_HOST/<repo>/-/issues/<N>
 Tasks:
-- #<N>: <title> - https://github.com/<repo>/issues/<N>
+- #<N>: <title> - https://$GITLAB_HOST/<repo>/-/issues/<N>
 Synced: <datetime>
 ```
 
 **Output:**
 ```
-✅ Synced epic <name> to GitHub
+✅ Synced epic <name> to GitLab
   Epic: #<N>
-  Tasks: N sub-issues
+  Tasks: N issues
   Worktree: ../epic-<name>
   Next: "start working on issue <N>" or "start the <name> epic"
 ```
@@ -116,10 +108,10 @@ Synced: <datetime>
 
 ## Issue Sync — Post Progress to GitHub
 
-**Trigger**: User wants to sync local development progress to a GitHub issue as a comment.
+**Trigger**: User wants to sync local development progress to a GitLab issue as a comment.
 
 ### Preflight
-- Verify issue exists: `gh issue view <N> --json state`
+- Verify issue exists: `glab issue view <N> --output json | jq -r '.state'`
 - Check `.claude/epics/*/updates/<N>/` exists with a `progress.md` file.
 - Check `last_sync` in progress.md — if synced <5 minutes ago, confirm before proceeding.
 
@@ -129,7 +121,7 @@ Gather updates from `.claude/epics/<epic>/updates/<N>/` (progress.md, notes.md, 
 
 Format and post a comment:
 ```bash
-gh issue comment <N> --body-file /tmp/update-comment.md
+glab issue note create <N> --message "$(cat /tmp/update-comment.md)"
 ```
 
 Comment format:
@@ -164,16 +156,16 @@ Add sync marker to local files to prevent duplicate comments:
 
 1. Find the local task file (`.claude/epics/*/<N>.md`).
 2. Update frontmatter: `status: closed`, `updated: <now>`.
-3. Post completion comment:
+3. Post completion comment and close issue:
 ```bash
-echo "✅ Task completed — all acceptance criteria met." | gh issue comment <N> --body-file -
-gh issue close <N>
+glab issue note create <N> --message "✅ Task completed — all acceptance criteria met."
+glab issue close <N>
 ```
 4. Check off the task in the epic issue body:
 ```bash
-gh issue view <epic_N> --json body -q .body > /tmp/epic-body.md
+glab issue view <epic_N> --output json | jq -r '.description' > /tmp/epic-body.md
 sed -i "s/- \[ \] #<N>/- [x] #<N>/" /tmp/epic-body.md
-gh issue edit <epic_N> --body-file /tmp/epic-body.md
+glab issue update <epic_N> --description "$(cat /tmp/epic-body.md)"
 ```
 5. Recalculate and update epic progress: `progress = closed_tasks / total_tasks * 100`
 
@@ -209,9 +201,10 @@ git push origin --delete epic/<name>
 mkdir -p .claude/epics/archived/
 mv .claude/epics/<name> .claude/epics/archived/
 
-# Close GitHub issues
-epic_issue=$(grep 'github:' .claude/epics/archived/<name>/epic.md | grep -oE '[0-9]+$')
-gh issue close $epic_issue -c "Epic completed and merged to main"
+# Close GitLab issues
+epic_issue=$(grep 'gitlab:' .claude/epics/archived/<name>/epic.md | grep -oE '[0-9]+$')
+glab issue note create $epic_issue --message "Epic completed and merged to main"
+glab issue close $epic_issue
 ```
 
 Update epic.md frontmatter: `status: completed`.
@@ -228,7 +221,7 @@ The workflow should stay automated: create a linked bug task without losing cont
 
 **Step 1 — Read the original issue for context:**
 ```bash
-gh issue view <original_N> --json title,body,labels
+glab issue view <original_N> --output json
 ```
 Also read the local task file if it exists: `.claude/epics/*/<original_N>.md`
 
@@ -272,17 +265,16 @@ Found while working on / testing issue #<original_N>: <original title>
 
 Save to `.claude/epics/<same_epic_as_original>/bug-<original_N>-<slug>.md`
 
-**Step 3 — Create a linked GitHub issue:**
+**Step 3 — Create a linked GitLab issue:**
 ```bash
-gh issue create \
+glab issue create \
   --repo "$REPO" \
   --title "Bug: <short description>" \
-  --body "$(cat /tmp/bug-body.md)" \
-  --label "bug,epic:<epic_name>" \
-  --json number -q .number
+  --description "$(cat /tmp/bug-body.md)" \
+  --label "bug,epic:<epic_name>" | grep -oE '[0-9]+$'
 ```
 
-The issue body should open with `Fixes / follow-up to #<original_N>` so GitHub auto-links them.
+The issue body should open with `Fixes / follow-up to #<original_N>` so GitLab auto-links them.
 
 **Step 4 — Update the local file** with the GitHub issue number and rename to `<new_N>.md`.
 

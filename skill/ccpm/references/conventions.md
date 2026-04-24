@@ -13,9 +13,9 @@ Read this before doing any file operations across all phases.
 ├── epics/
 │   ├── <feature-name>/
 │   │   ├── epic.md                # Technical epic
-│   │   ├── <N>.md                 # Task files (named by GitHub issue number after sync)
+│   │   ├── <N>.md                 # Task files (named by GitLab issue IID after sync)
 │   │   ├── <N>-analysis.md        # Parallel work stream analysis
-│   │   ├── github-mapping.md      # Issue number → URL mapping
+│   │   ├── gitlab-mapping.md      # Issue IID → URL mapping
 │   │   ├── execution-status.md    # Active agents tracker
 │   │   └── updates/
 │   │       └── <issue_N>/
@@ -50,7 +50,7 @@ created: <ISO 8601>
 updated: <ISO 8601>
 progress: 0%                # recalculated when tasks close
 prd: .claude/prds/<name>.md
-github: https://github.com/<owner>/<repo>/issues/<N>  # set on sync
+gitlab: https://gitlab.com/<group>/<project>/-/issues/<N>  # set on sync
 ---
 ```
 
@@ -61,7 +61,7 @@ name: <Task Title>
 status: open | in-progress | closed
 created: <ISO 8601>
 updated: <ISO 8601>
-github: https://github.com/<owner>/<repo>/issues/<N>  # set on sync
+gitlab: https://gitlab.com/<group>/<project>/-/issues/<N>  # set on sync
 depends_on: []              # issue numbers this must wait for
 parallel: true              # can run concurrently with non-conflicting tasks
 conflicts_with: []          # issue numbers that touch the same files
@@ -97,36 +97,39 @@ sed -i.bak "/^<field>:/c\\<field>: <value>" <file>
 rm <file>.bak
 ```
 
-When stripping frontmatter to get body content for GitHub:
+When stripping frontmatter to get body content for GitLab:
 ```bash
 sed '1,/^---$/d; 1,/^---$/d' <file> > /tmp/body.md
 ```
 
 ---
 
-## GitHub Operations
+## GitLab Operations
 
 ### Repository Safety Check (run before any write operation)
 ```bash
 remote_url=$(git remote get-url origin 2>/dev/null || echo "")
-if [[ "$remote_url" == *"automazeio/ccpm"* ]]; then
+# Extract host dynamically — works for gitlab.com AND self-hosted instances
+GITLAB_HOST=$(echo "$remote_url" | sed -E 's|https?://([^/]+)/.*|\1|' | sed -E 's|git@([^:]+):.*|\1|')
+REPO=$(echo "$remote_url" | sed -E 's|https?://[^/]+/||' | sed -E 's|git@[^:]+:||' | sed 's|\.git$||')
+
+if [[ "$REPO" == "automazeio/ccpm" ]]; then
   echo "❌ Cannot write to the CCPM template repository."
-  echo "Update remote: git remote set-url origin https://github.com/YOUR/REPO.git"
+  echo "Update remote: git remote set-url origin https://$GITLAB_HOST/YOUR_GROUP/YOUR_REPO.git"
   exit 1
 fi
-REPO=$(echo "$remote_url" | sed 's|.*github.com[:/]||' | sed 's|\.git$||')
 ```
 
 ### Authentication
-Don't pre-check authentication. Run the `gh` command and handle failure:
+Don't pre-check authentication. Run the `glab` command and handle failure:
 ```bash
-gh <command> || echo "❌ GitHub CLI failed. Run: gh auth login"
+glab <command> || echo "❌ GitLab CLI failed. Run: glab auth login"
 ```
 
-### Getting Issue Numbers
+### Getting Issue IDs
 ```bash
-# From a task file's github field:
-grep 'github:' <file> | grep -oE '[0-9]+$'
+# From a task file's gitlab field:
+grep 'gitlab:' <file> | grep -oE '[0-9]+$'
 ```
 
 ---
@@ -149,7 +152,7 @@ grep 'github:' <file> | grep -oE '[0-9]+$'
 
 - Feature names: kebab-case, lowercase, letters/numbers/hyphens, starts with a letter
 - Task files before sync: `001.md`, `002.md`, ... (sequential)
-- Task files after sync: renamed to GitHub issue number (e.g., `1234.md`)
+- Task files after sync: renamed to GitLab issue IID (e.g., `1234.md`)
 - Labels applied on sync: `epic`, `epic:<name>`, `feature` (for epics); `task`, `epic:<name>` (for tasks)
 
 ---

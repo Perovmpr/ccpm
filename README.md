@@ -10,11 +10,11 @@
 &nbsp;
 [![Follow on 𝕏](https://img.shields.io/badge/𝕏-@aroussi-1c9bf0)](http://x.com/intent/follow?screen_name=aroussi)
 &nbsp;
-[![Star this repo](https://img.shields.io/github/stars/automazeio/ccpm.svg?style=social&label=Star%20this%20repo&maxAge=60)](https://github.com/automazeio/ccpm)
+[![Star this repo](https://img.shields.io/badge/dynamic/json?label=Stars&query=%24.star_count&url=https%3A%2F%2Fgitlab.com%2Fapi%2Fv4%2Fprojects%2Fautomazeio%252Fccpm&style=social)](https://gitlab.com/automazeio/ccpm)
 
-### Spec-driven development for AI agents – ship ~~faster~~ _better_ using PRDs, GitHub issues, and multiple agents running in parallel.
+### Spec-driven development for AI agents – ship ~~faster~~ _better_ using PRDs, GitLab issues, and multiple agents running in parallel.
 
-Stop losing context. Stop blocking on tasks. Stop shipping bugs. CCPM gives your AI agent a structured PM brain: turn ideas into PRDs, PRDs into epics, epics into GitHub issues, and issues into production code — with full traceability at every step.
+Stop losing context. Stop blocking on tasks. Stop shipping bugs. CCPM gives your AI agent a structured PM brain: turn ideas into PRDs, PRDs into epics, epics into GitLab issues, and issues into production code — with full traceability at every step.
 
 ---
 
@@ -30,7 +30,7 @@ Stop losing context. Stop blocking on tasks. Stop shipping bugs. CCPM gives your
 - [Background](#background)
 - [The Workflow](#the-workflow)
 - [What Makes This Different](#what-makes-this-different)
-- [Why GitHub Issues](#why-github-issues)
+- [Why GitLab Issues](#why-gitlab-issues)
 - [Core Principle: No Vibe Coding](#core-principle-no-vibe-coding)
 - [The Parallel Execution System](#the-parallel-execution-system)
 - [Key Features & Benefits](#key-features--benefits)
@@ -69,7 +69,7 @@ CCPM solves all of that.
 graph LR
     A[PRD Creation] --> B[Epic Planning]
     B --> C[Task Decomposition]
-    C --> D[GitHub Sync]
+    C --> D[GitLab Sync]
     D --> E[Parallel Execution]
 ```
 
@@ -82,8 +82,8 @@ graph LR
 "break down the notification-system epic"
 → Parallelizable task files with dependencies
 
-"sync the notification-system epic to GitHub"
-→ Epic issue + sub-issues + worktree
+"sync the notification-system epic to GitLab"
+→ Epic issue + issues + worktree
 
 "start working on issue 42"
 → Parallel stream analysis + multiple agents launched
@@ -188,7 +188,7 @@ CCPM is a standard [Agent Skill](https://agentskills.io). Point your harness at 
 ### Clone the repo
 
 ```bash
-git clone https://github.com/automazeio/ccpm.git
+git clone https://gitlab.com/automazeio/ccpm.git
 ```
 
 ### Factory / Droid

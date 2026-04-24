@@ -149,7 +149,7 @@ bash references/scripts/blocked.sh
 bash references/scripts/validate.sh
 ```
 
-Checks: frontmatter consistency, orphaned files, missing GitHub links, dependency integrity.
+Checks: frontmatter consistency, orphaned files, missing GitLab links, dependency integrity.
 
 ---
 

@@ -9,12 +9,12 @@ This phase covers analyzing GitHub issues for parallel work streams and launchin
 **Trigger**: User wants to understand how to parallelize work on an issue before starting.
 
 ### Preflight
-- Find the local task file: check `.claude/epics/*/<N>.md` first, then search for `github:.*issues/<N>` in frontmatter.
+- Find the local task file: check `.claude/epics/*/<N>.md` first, then search for `gitlab:.*issues/<N>` in frontmatter.
 - If not found: "❌ No local task for issue #<N>. Run a sync first."
 
 ### Process
 
-Get issue details: `gh issue view <N> --json title,body,labels`
+Get issue details: `glab issue view <N> --output json`
 
 Read the local task file fully. Identify independent work streams by asking:
 - Which files will be created/modified?
@@ -81,7 +81,7 @@ parallelization_factor: <1.0-5.0>
 **Trigger**: User wants to begin work on a specific GitHub issue.
 
 ### Preflight
-1. Verify issue exists and is open: `gh issue view <N> --json state,title,labels,body`
+1. Verify issue exists and is open: `glab issue view <N> --output json`
 2. Find local task file (as above).
 3. Check for analysis file: `.claude/epics/*/<N>-analysis.md` — if missing, run analysis first (or do both in sequence: analyze then start).
 4. Verify epic worktree exists: `git worktree list | grep "epic-<name>"` — if not: "❌ No worktree. Sync the epic first."
@@ -136,9 +136,9 @@ Task:
 
 Streams with unmet dependencies are queued — launch them as their dependencies complete.
 
-**Step 4 — Assign on GitHub:**
+**Step 4 — Assign on GitLab:**
 ```bash
-gh issue edit <N> --add-assignee @me --add-label "in-progress"
+glab issue update <N> --assignee @me --label "in-progress"
 ```
 
 **Step 5 — Create execution status file** at `.claude/epics/<epic>/updates/<N>/execution.md`:
@@ -174,7 +174,7 @@ Sync updates: "sync issue <N>"
 **Trigger**: User wants to launch parallel agents across all ready issues in an epic at once.
 
 ### Preflight
-- Verify `.claude/epics/<name>/epic.md` exists and has a `github:` field (i.e., it's been synced).
+- Verify `.claude/epics/<name>/epic.md` exists and has a `gitlab:` field (i.e., it's been synced).
 - Check for uncommitted changes: `git status --porcelain` — block if dirty.
 - Verify epic branch exists: `git branch -a | grep "epic/<name>"`
 

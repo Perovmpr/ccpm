@@ -6,7 +6,7 @@
 
 ## Обзор проекта
 
-**CCPM** (Claude Code Project Manager) — это совместимый со стандартом [Agent Skills](https://agentskills.io) навык, который реализует spec-driven разработку для AI-агентов. Он обеспечивает структурированный 5-этапный рабочий процесс: План (создание PRD) → Структура (декомпозиция задач) → Синхронизация (интеграция GitHub) → Выполнение (запуск параллельных агентов) → Отслеживание (видимость прогресса).
+**CCPM** (Claude Code Project Manager) — это совместимый со стандартом [Agent Skills](https://agentskills.io) навык, который реализует spec-driven разработку для AI-агентов. Он обеспечивает структурированный 5-этапный рабочий процесс: План (создание PRD) → Структура (декомпозиция задач) → Синхронизация (интеграция GitLab) → Выполнение (запуск параллельных агентов) → Отслеживание (видимость прогресса).
 
 Этот репозиторий содержит определение навыка и справочную документацию. Навык устанавливается в harness агентов (Claude Code, Factory, Codex и т.д.) и работает с файлами проекта, хранящимися в `.claude/` внутри целевых репозиториев.
 
@@ -19,13 +19,13 @@
 - **Без внешних сервисов**: Все состояние проекта живёт в markdown-файлах в `.claude/`
 - **Git-native**: Изменения коммитятся и отслеживаются; несколько агентов могут работать параллельно через git worktrees
 - **Детерминированные операции**: Status, standup, search работают как bash-скрипты (без LLM)
-- **Спецификация в приоритете**: Требования текут: PRD → Epic → Tasks → GitHub Issues → Code
+- **Спецификация в приоритете**: Требования текут: PRD → Epic → Tasks → GitLab Issues → Code
 
 ### Пять этапов
 
 1. **План** (`references/plan.md`): Написание PRD через управляемый брейншторм; преобразование PRD в технические эпики
 2. **Структура** (`references/structure.md`): Декомпозиция эпиков на пронумерованные файлы задач с зависимостями и метаданными параллелизации
-3. **Синхронизация** (`references/sync.md`): Отправка локальных эпиков/задач в GitHub как issues; публикация комментариев о прогрессе; закрытие/слияние workflows
+3. **Синхронизация** (`references/sync.md`): Отправка локальных эпиков/задач в GitLab как issues; публикация комментариев о прогрессе; закрытие workflows
 4. **Выполнение** (`references/execute.md`): Анализ issues для параллельных потоков работы; запуск нескольких агентов в изолированные worktrees; координация через git commits
 5. **Отслеживание** (`references/track.md`): Отчёты о статусе, standup, что дальше/заблокировано через bash-скрипты
 
@@ -38,9 +38,9 @@
 ├── epics/
 │   ├── <feature>/
 │   │   ├── epic.md                    # Технический эпик
-│   │   ├── <issue-number>.md          # Файл задачи (имя соответствует GitHub issue)
+│   │   ├── <issue-number>.md          # Файл задачи (имя соответствует GitLab issue)
 │   │   ├── <issue-number>-analysis.md # Анализ параллельных потоков работы
-│   │   ├── github-mapping.md          # Маппинг Issue ID → URL
+│   │   ├── gitlab-mapping.md          # Маппинг Issue IID → URL
 │   │   ├── execution-status.md        # Трекер активных агентов
 │   │   └── updates/
 │   │       └── <issue-number>/
@@ -62,7 +62,7 @@ skill/ccpm/
 ├── references/
 │   ├── plan.md         (106 lines)     # Написание PRD и парсинг в эпик
 │   ├── structure.md    (106 lines)     # Декомпозиция эпика на задачи
-│   ├── sync.md         (296 lines)     # GitHub синхронизация, прогресс, закрытие, слияние
+│   ├── sync.md         (296 lines)     # GitLab синхронизация, прогресс, закрытие workflows
 │   ├── execute.md      (212 lines)     # Анализ issues и запуск параллельных агентов
 │   ├── track.md        (163 lines)     # Статус, standup, поиск, что дальше/заблокировано
 │   ├── conventions.md  (165 lines)     # Форматы файлов, пути, схемы frontmatter, git правила
@@ -91,11 +91,11 @@ skill/ccpm/
 
 ### 1. Метаданные Frontmatter
 
-Все файлы используют YAML frontmatter для отслеживания состояния, зависимостей и GitHub ссылок:
+Все файлы используют YAML frontmatter для отслеживания состояния, зависимостей и GitLab ссылок:
 
 - **PRD**: `name`, `description`, `status`, `created`
-- **Epics**: `name`, `status`, `created`, `updated`, `progress` (%), `prd` (путь), `github` (URL)
-- **Tasks**: `name`, `status`, `github` (URL), `depends_on` (массив), `parallel` (bool), `conflicts_with` (массив)
+- **Epics**: `name`, `status`, `created`, `updated`, `progress` (%), `prd` (путь), `gitlab` (URL)
+- **Tasks**: `name`, `status`, `gitlab` (URL), `depends_on` (массив), `parallel` (bool), `conflicts_with` (массив)
 - **Progress**: `issue`, `started`, `last_sync`, `completion` (%)
 
 Даты всегда в ISO 8601 UTC (`date -u +"%Y-%m-%dT%H:%M:%SZ"`).
@@ -108,13 +108,13 @@ skill/ccpm/
 - Каждый параллельный поток получает собственного агента в изолированном git worktree (`../epic-<name>/`)
 - Commits следуют формату: `Issue #<N>: <description>`
 
-### 3. Интеграция GitHub
+### 3. Интеграция GitLab
 
 - **Проверка безопасности**: Предотвращение записи в CCPM репозиторий-шаблон (`automazeio/ccpm`)
-- **Без Projects API**: Использует `gh` CLI для основных операций; fallback на task lists если недоступна `gh-sub-issue` расширение
+- **Без Projects API**: Использует `glab` CLI для основных операций (работает с любым инстансом GitLab)
 - **Стратегия worktree**: Каждый эпик получает ветку (`epic/<name>`) и worktree (`../epic-<name>/`) для изоляции
-- **Комментарии о прогрессе**: Агенты публикуют обновления через `gh issue comment` со структурированным форматированием
-- **Проверка репозитория**: Извлечение repo из `git remote get-url origin` перед любой записью
+- **Комментарии о прогрессе**: Агенты публикуют обновления через `glab issue note create` со структурированным форматированием
+- **Проверка репозитория**: Извлечение repo и хоста из `git remote get-url origin` перед любой записью; поддержка self-hosted инстансов
 
 ### 4. Script-First для детерминированных операций
 
@@ -159,7 +159,7 @@ bash .claude/references/scripts/epic-status.sh <name>
 Редактируйте `skill/ccpm/references/conventions.md` для:
 - Изменения путей файлов или naming conventions
 - Обновления схем frontmatter
-- Модификации правил GitHub операций
+- Модификации правил GitLab операций
 
 **Влияние**: Влияет на все пять этапов. Координируйте изменения по всем reference файлам.
 
@@ -194,10 +194,13 @@ progress=$((closed * 100 / total))
 
 ### Безопасность репозитория
 
-Всегда проверяйте перед записью в GitHub:
+Всегда проверяйте перед записью в GitLab:
 ```bash
 remote_url=$(git remote get-url origin 2>/dev/null || echo "")
-if [[ "$remote_url" == *"automazeio/ccpm"* ]]; then
+GITLAB_HOST=$(echo "$remote_url" | sed -E 's|https?://([^/]+)/.*|\1|' | sed -E 's|git@([^:]+):.*|\1|')
+REPO=$(echo "$remote_url" | sed -E 's|https?://[^/]+/||' | sed -E 's|git@[^:]+:||' | sed 's|\.git$||')
+
+if [[ "$REPO" == "automazeio/ccpm" ]]; then
   echo "❌ Cannot write to the CCPM template repository."
   exit 1
 fi
@@ -207,7 +210,7 @@ fi
 
 - **Имена feature**: kebab-case (`user-auth`, `payment-v2`)
 - **Task файлы до sync**: пронумерованы последовательно (`001.md`, `002.md`, ...)
-- **Task файлы после sync**: переименованы в номер GitHub issue (`1234.md`)
+- **Task файлы после sync**: переименованы в номер GitLab issue (`1234.md`)
 - **Ветки**: `epic/<feature-name>`
 - **Worktrees**: `../epic-<feature-name>/`
 - **Labels**: `epic`, `epic:<name>`, `feature`, `task`
@@ -229,7 +232,7 @@ fi
 
 - **Основная разработка**: Изменения логики навыка и документации
 - **Ветки**: Feature branches для новых фаз или major перепписки скриптов
-- **Commits**: Ясные сообщения с ссылками на GitHub issues если применимо
+- **Commits**: Ясные сообщения с ссылками на GitLab issues если применимо
 - **Тестирование**: Валидируйте скрипты в sandboxed `.claude/` директориях; тестируйте intent detection в harness агента
 
 ---
@@ -238,7 +241,7 @@ fi
 
 1. **Без внешних инструментов PM**: Всё состояние в git-отслеживаемом markdown. Упрощает интеграцию, увеличивает портативность.
 2. **Bash скрипты вместо Python/Node**: Скрипты работают без зависимостей; работают в любом shell harness.
-3. **Только GitHub платформа**: Текущая версия не поддерживает GitLab, Gitea или другие VCS. Точка будущего расширения.
+3. **GitLab поддержка**: Поддерживает gitlab.com и self-hosted инстансы GitLab. Другие VCS (Gitea, Gitbucket) требуют расширения.
 4. **Последовательное создание PRD + Epic**: Нельзя распараллелить написание PRD и парсинг epic. Последовательно для сохранения контекста.
 5. **Worktree per epic, не per task**: Уменьшает git overhead; задачи внутри эпика координируются через git commits.
 
@@ -247,6 +250,6 @@ fi
 ## Ресурсы
 
 - **Agent Skills Spec**: https://agentskills.io
-- **CCPM GitHub**: https://github.com/automazeio/ccpm
+- **CCPM GitLab**: https://gitlab.com/automazeio/ccpm
 - **Claude Code Docs**: https://claude.ai/code
 - **Тестирование навыка**: See "Тестирование навыка" раздел выше

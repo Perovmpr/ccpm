@@ -8,7 +8,7 @@ Tracking operations use bash scripts directly for speed and consistency. The LLM
 
 All tracking operations have a corresponding bash script. Run the script; do not reconstruct the output manually.
 
-Scripts live in `references/scripts/` relative to this skill, but need to run from the **project root** (where `.qwen/` lives). Run them as:
+Scripts live in `references/scripts/` relative to this skill, but need to run from the **project root** (where `.claude/` lives). Run them as:
 
 ```bash
 bash <skill_path>/references/scripts/<script>.sh [args]
@@ -149,7 +149,7 @@ bash references/scripts/blocked.sh
 bash references/scripts/validate.sh
 ```
 
-Checks: frontmatter consistency, orphaned files, missing GitLab links, dependency integrity.
+Checks: frontmatter consistency, orphaned files, missing GitHub links, dependency integrity.
 
 ---
 
@@ -157,7 +157,7 @@ Checks: frontmatter consistency, orphaned files, missing GitLab links, dependenc
 
 If a script fails or the output needs interpretation (e.g., an error in the output, or the user asks "what does this mean"), then step in to explain. But always run the script first — don't guess at what status/standup output would look like.
 
-If `.qwen/` directory doesn't exist at all, the project hasn't been initialized. Direct the user to run:
+If `.claude/` directory doesn't exist at all, the project hasn't been initialized. Direct the user to run:
 ```bash
 bash references/scripts/init.sh
 ```

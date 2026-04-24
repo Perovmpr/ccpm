@@ -17,9 +17,9 @@ echo "================================"
 echo ""
 
 # Search in PRDs
-if [ -d ".qwen/prds" ]; then
+if [ -d ".claude/prds" ]; then
   echo "📄 PRDs:"
-  results=$(grep -l -i "$query" .qwen/prds/*.md 2>/dev/null)
+  results=$(grep -l -i "$query" .claude/prds/*.md 2>/dev/null)
   if [ -n "$results" ]; then
     for file in $results; do
       name=$(basename "$file" .md)
@@ -33,9 +33,9 @@ if [ -d ".qwen/prds" ]; then
 fi
 
 # Search in Epics
-if [ -d ".qwen/epics" ]; then
+if [ -d ".claude/epics" ]; then
   echo "📚 Epics:"
-  results=$(find .qwen/epics -name "epic.md" -exec grep -l -i "$query" {} \; 2>/dev/null)
+  results=$(find .claude/epics -name "epic.md" -exec grep -l -i "$query" {} \; 2>/dev/null)
   if [ -n "$results" ]; then
     for file in $results; do
       epic_name=$(basename $(dirname "$file"))
@@ -49,9 +49,9 @@ if [ -d ".qwen/epics" ]; then
 fi
 
 # Search in Tasks
-if [ -d ".qwen/epics" ]; then
+if [ -d ".claude/epics" ]; then
   echo "📝 Tasks:"
-  results=$(find .qwen/epics -name "[0-9]*.md" -exec grep -l -i "$query" {} \; 2>/dev/null | head -10)
+  results=$(find .claude/epics -name "[0-9]*.md" -exec grep -l -i "$query" {} \; 2>/dev/null | head -10)
   if [ -n "$results" ]; then
     for file in $results; do
       epic_name=$(basename $(dirname "$file"))
@@ -64,7 +64,7 @@ if [ -d ".qwen/epics" ]; then
 fi
 
 # Summary
-total=$(find .qwen -name "*.md" -exec grep -l -i "$query" {} \; 2>/dev/null | wc -l)
+total=$(find .claude -name "*.md" -exec grep -l -i "$query" {} \; 2>/dev/null | wc -l)
 echo ""
 echo "📊 Total files with matches: $total"
 

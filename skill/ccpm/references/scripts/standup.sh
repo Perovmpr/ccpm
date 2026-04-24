@@ -36,7 +36,7 @@ fi
 echo ""
 echo "🔄 Currently In Progress:"
 # Show active work items
-for updates_dir in .qwen/epics/*/updates/*/; do
+for updates_dir in .claude/epics/*/updates/*/; do
   [ -d "$updates_dir" ] || continue
   if [ -f "$updates_dir/progress.md" ]; then
     issue_num=$(basename "$updates_dir")
@@ -50,7 +50,7 @@ echo ""
 echo "⏭️ Next Available Tasks:"
 # Show top 3 available tasks
 count=0
-for epic_dir in .qwen/epics/*/; do
+for epic_dir in .claude/epics/*/; do
   [ -d "$epic_dir" ] || continue
   for task_file in "$epic_dir"/[0-9]*.md; do
     [ -f "$task_file" ] || continue
@@ -78,9 +78,9 @@ done
 
 echo ""
 echo "📊 Quick Stats:"
-total_tasks=$(find .qwen/epics -name "[0-9]*.md" 2>/dev/null | wc -l)
-open_tasks=$(find .qwen/epics -name "[0-9]*.md" -exec grep -l "^status: *open" {} \; 2>/dev/null | wc -l)
-closed_tasks=$(find .qwen/epics -name "[0-9]*.md" -exec grep -l "^status: *closed" {} \; 2>/dev/null | wc -l)
+total_tasks=$(find .claude/epics -name "[0-9]*.md" 2>/dev/null | wc -l)
+open_tasks=$(find .claude/epics -name "[0-9]*.md" -exec grep -l "^status: *open" {} \; 2>/dev/null | wc -l)
+closed_tasks=$(find .claude/epics -name "[0-9]*.md" -exec grep -l "^status: *closed" {} \; 2>/dev/null | wc -l)
 echo "  Tasks: $open_tasks open, $closed_tasks closed, $total_tasks total"
 
 exit 0

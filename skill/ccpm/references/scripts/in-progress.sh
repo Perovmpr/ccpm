@@ -10,8 +10,8 @@ echo ""
 # Check for active work in updates directories
 found=0
 
-if [ -d ".qwen/epics" ]; then
-  for updates_dir in .qwen/epics/*/updates/*/; do
+if [ -d ".claude/epics" ]; then
+  for updates_dir in .claude/epics/*/updates/*/; do
     [ -d "$updates_dir" ] || continue
 
     issue_num=$(basename "$updates_dir")
@@ -22,7 +22,7 @@ if [ -d ".qwen/epics" ]; then
       [ -z "$completion" ] && completion="0%"
 
       # Get task name from the task file
-      task_file=".qwen/epics/$epic_name/$issue_num.md"
+      task_file=".claude/epics/$epic_name/$issue_num.md"
       if [ -f "$task_file" ]; then
         task_name=$(grep "^name:" "$task_file" | head -1 | sed 's/^name: *//')
       else
@@ -47,7 +47,7 @@ fi
 
 # Also check for in-progress epics
 echo "📚 Active Epics:"
-for epic_dir in .qwen/epics/*/; do
+for epic_dir in .claude/epics/*/; do
   [ -d "$epic_dir" ] || continue
   [ -f "$epic_dir/epic.md" ] || continue
 

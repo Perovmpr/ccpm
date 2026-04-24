@@ -13,17 +13,17 @@ warnings=0
 
 # Check directory structure
 echo "📁 Directory Structure:"
-[ -d ".qwen" ] && echo "  ✅ .qwen directory exists" || { echo "  ❌ .qwen directory missing"; ((errors++)); }
-[ -d ".qwen/prds" ] && echo "  ✅ PRDs directory exists" || echo "  ⚠️ PRDs directory missing"
-[ -d ".qwen/epics" ] && echo "  ✅ Epics directory exists" || echo "  ⚠️ Epics directory missing"
-[ -d ".qwen/rules" ] && echo "  ✅ Rules directory exists" || echo "  ⚠️ Rules directory missing"
+[ -d ".claude" ] && echo "  ✅ .claude directory exists" || { echo "  ❌ .claude directory missing"; ((errors++)); }
+[ -d ".claude/prds" ] && echo "  ✅ PRDs directory exists" || echo "  ⚠️ PRDs directory missing"
+[ -d ".claude/epics" ] && echo "  ✅ Epics directory exists" || echo "  ⚠️ Epics directory missing"
+[ -d ".claude/rules" ] && echo "  ✅ Rules directory exists" || echo "  ⚠️ Rules directory missing"
 echo ""
 
 # Check for orphaned files
 echo "🗂️ Data Integrity:"
 
 # Check epics have epic.md files
-for epic_dir in .qwen/epics/*/; do
+for epic_dir in .claude/epics/*/; do
   [ -d "$epic_dir" ] || continue
   if [ ! -f "$epic_dir/epic.md" ]; then
     echo "  ⚠️ Missing epic.md in $(basename "$epic_dir")"
@@ -32,14 +32,14 @@ for epic_dir in .qwen/epics/*/; do
 done
 
 # Check for tasks without epics
-orphaned=$(find .qwen -name "[0-9]*.md" -not -path ".qwen/epics/*/*" 2>/dev/null | wc -l)
+orphaned=$(find .claude -name "[0-9]*.md" -not -path ".claude/epics/*/*" 2>/dev/null | wc -l)
 [ $orphaned -gt 0 ] && echo "  ⚠️ Found $orphaned orphaned task files" && ((warnings++))
 
 # Check for broken references
 echo ""
 echo "🔗 Reference Check:"
 
-for task_file in .qwen/epics/*/[0-9]*.md; do
+for task_file in .claude/epics/*/[0-9]*.md; do
   [ -f "$task_file" ] || continue
 
   deps_line=$(grep "^depends_on:" "$task_file" | head -1)
@@ -69,7 +69,7 @@ echo ""
 echo "📝 Frontmatter Validation:"
 invalid=0
 
-for file in $(find .qwen -name "*.md" -path "*/epics/*" -o -path "*/prds/*" 2>/dev/null); do
+for file in $(find .claude -name "*.md" -path "*/epics/*" -o -path "*/prds/*" 2>/dev/null); do
   if ! grep -q "^---" "$file"; then
     echo "  ⚠️ Missing frontmatter: $(basename "$file")"
     ((invalid++))

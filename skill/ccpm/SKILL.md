@@ -79,4 +79,19 @@ Check status:       "what's our status" / "standup"
 What's next:        "what should I work on next"
 Merge epic:         "merge the X epic"
 Report a bug:       "found a bug in issue 42" / "testing issue 42 revealed X"
+Close tasks:        "close completed tasks" / "sync issue statuses with GitLab"
 ```
+
+## Important: Closing Completed Tasks
+
+When tasks are completed and merged to main, they MUST be closed on GitLab:
+
+1. **Update local task files**: `status: closed` in frontmatter
+2. **Post final comment** to each completed issue
+3. **Close issue**: `glab issue close <N>`
+4. **Update epic issue body**: Mark task checkbox as `[x]` in epic description
+5. **Recalculate epic progress**: `completed_tasks / total_tasks * 100%`
+
+See `references/sync.md` → "Closing an Issue" section for full procedure.
+
+**Without this step**, tasks remain open on GitLab even though code is shipped, creating confusion about actual project status.

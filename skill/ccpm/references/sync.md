@@ -352,3 +352,43 @@ The issue body should open with `Fixes / follow-up to #<original_N>` so GitLab a
 
 Start fixing it: "start working on issue <new_N>"
 ```
+
+---
+
+## Bulk Update: Checkboxes for All Closed Tasks
+
+**Trigger**: User has many closed tasks and wants to update all checkboxes at once (locally and on GitLab).
+
+**When to use**: After merging many completed tasks, or to clean up checkbox state across multiple epics.
+
+### Process
+
+Run the bulk update script — it iterates through all epics, finds closed tasks, and updates checkboxes:
+
+```bash
+bash references/scripts/update-checkboxes.sh
+```
+
+**What it does:**
+1. For each epic with a GitLab issue:
+   - Fetches current epic description
+   - Finds all local task files with `status: closed`
+   - Marks unchecked boxes `- [ ]` → `- [x]` for closed tasks
+   - Updates epic issue on GitLab
+   - Recalculates epic progress (`closed_tasks / total_tasks * 100%`)
+   - Updates `progress` field in epic.md
+
+**Output:**
+```
+🔄 Updating checkboxes for all closed tasks...
+
+📋 Epic: my-feature (issue #123)
+  ✅ Marking task #45 as done: Implement API endpoint
+  ✅ Marking task #46 as done: Add validation
+  ✨ Epic issue updated on GitLab
+  📊 Progress: 3/5 tasks closed (60%)
+
+✅ All checkboxes updated!
+```
+
+This is the fastest way to synchronize checkbox state across multiple epics after batch merges or to recover state if checkboxes got out of sync.

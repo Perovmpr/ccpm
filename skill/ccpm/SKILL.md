@@ -62,6 +62,7 @@ For deterministic operations — anything that reads and reports without needing
 | What's next | `bash references/scripts/next.sh` |
 | What's blocked | `bash references/scripts/blocked.sh` |
 | Validate project state | `bash references/scripts/validate.sh` |
+| Update all checkboxes for closed tasks | `bash references/scripts/update-checkboxes.sh` |
 
 Use the LLM for work that requires reasoning: writing PRDs, analyzing parallelism, launching agents, synthesizing updates.
 

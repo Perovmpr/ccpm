@@ -33,11 +33,24 @@ fi
 
 ### Process
 
-**Step 1 — Create epic issue:**
+**Step 1 — Create epic issue with task checklist placeholder:**
 
-Strip frontmatter from epic.md, then:
+Strip frontmatter from epic.md. Count tasks and add checklist placeholder:
 ```bash
 sed '1,/^---$/d; 1,/^---$/d' .claude/epics/<name>/epic.md > /tmp/epic-body.md
+
+# Count tasks and create checklist placeholder
+task_count=$(ls .claude/epics/<name>/[0-9]*.md 2>/dev/null | wc -l)
+if [ "$task_count" -gt 0 ]; then
+  # Add checklist section at the end of epic body
+  echo "" >> /tmp/epic-body.md
+  echo "## Tasks" >> /tmp/epic-body.md
+  for task_file in .claude/epics/<name>/[0-9]*.md; do
+    task_name=$(grep '^name:' "$task_file" | cut -d':' -f2- | xargs)
+    echo "- [ ] $task_name" >> /tmp/epic-body.md
+  done
+fi
+
 epic_number=$(glab issue create \
   --repo "$REPO" \
   --title "Epic: <name>" \
@@ -60,14 +73,50 @@ task_number=$(glab issue create \
   --label "task,epic:<name>" | grep -oE '[0-9]+$')
 ```
 
-**Step 3 — Rename task files and update references:**
+**Step 3 — Rename task files, update references, and refresh epic issue checklist:**
 
-After all issues are created, rename `001.md` → `<issue_number>.md` and update all `depends_on`/`conflicts_with` arrays to use real issue numbers (not sequential numbers).
+After all issues are created, rename `001.md` → `<issue_number>.md` and update all `depends_on`/`conflicts_with` arrays to use real issue numbers.
 
 ```bash
-# Build old→new mapping, then for each task file:
-sed -i.bak "s/\b001\b/<new_num_1>/g" <file>  # repeat for each mapping
-mv 001.md <new_num>.md
+# Build mapping of old→new issue numbers
+declare -A task_map
+for old_file in .claude/epics/<name>/[0-9]*.md; do
+  if [ -f "$old_file" ]; then
+    old_name=$(basename "$old_file" .md)
+    # Extract the new issue number from gitlab field (already set during Step 2)
+    new_num=$(grep '^gitlab:' "$old_file" | grep -oE '[0-9]+$')
+    task_map["$old_name"]=$new_num
+    mv "$old_file" ".claude/epics/<name>/${new_num}.md"
+  fi
+done
+
+# Update all depends_on/conflicts_with references in renamed files
+for file in .claude/epics/<name>/[0-9]*.md; do
+  for old_num in "${!task_map[@]}"; do
+    new_num="${task_map[$old_num]}"
+    sed -i.bak "s/\b$old_num\b/$new_num/g" "$file"
+  done
+  rm "$file.bak"
+done
+
+# Refresh epic issue body with updated task checklist
+epic_num=$(grep '^gitlab:' .claude/epics/<name>/epic.md | grep -oE '[0-9]+$')
+glab issue view "$epic_num" --output json | jq -r '.description' > /tmp/epic-body.md
+
+# Remove old "## Tasks" section if it exists, keep everything before it
+sed -i.bak '/^## Tasks$/,$d' /tmp/epic-body.md
+rm /tmp/epic-body.md.bak
+
+# Append updated task checklist
+echo "" >> /tmp/epic-body.md
+echo "## Tasks" >> /tmp/epic-body.md
+for task_file in .claude/epics/<name>/[0-9]*.md; do
+  task_name=$(grep '^name:' "$task_file" | cut -d':' -f2- | xargs)
+  task_num=$(basename "$task_file" .md)
+  echo "- [ ] #$task_num: $task_name" >> /tmp/epic-body.md
+done
+
+glab issue update "$epic_num" --description "$(cat /tmp/epic-body.md)"
 ```
 
 **Step 4 — Update frontmatter:**
@@ -161,13 +210,30 @@ Add sync marker to local files to prevent duplicate comments:
 glab issue note create <N> --message "✅ Task completed — all acceptance criteria met."
 glab issue close <N>
 ```
-4. Check off the task in the epic issue body:
+4. Check off the task in the epic issue body — find the epic issue number and update its body:
 ```bash
-glab issue view <epic_N> --output json | jq -r '.description' > /tmp/epic-body.md
-sed -i "s/- \[ \] #<N>/- [x] #<N>/" /tmp/epic-body.md
-glab issue update <epic_N> --description "$(cat /tmp/epic-body.md)"
+# Get epic number from epic.md
+epic_num=$(grep '^gitlab:' .claude/epics/<name>/epic.md | grep -oE '[0-9]+$')
+
+# Get current epic body
+glab issue view "$epic_num" --output json | jq -r '.description' > /tmp/epic-body.md
+
+# Replace the unchecked checkbox for this task with a checked one (works for both formats)
+# Handles: - [ ] #<N>: ... and - [ ] <task-name>
+sed -i.bak "s/- \[ \] #$N:/- [x] #$N:/g; s/- \[ \] \(.*Issue #$N\)/- [x] \1/g" /tmp/epic-body.md
+rm /tmp/epic-body.md.bak
+
+# Update the epic issue
+glab issue update "$epic_num" --description "$(cat /tmp/epic-body.md)"
 ```
-5. Recalculate and update epic progress: `progress = closed_tasks / total_tasks * 100`
+5. Recalculate and update epic progress in frontmatter:
+```bash
+total=$(ls .claude/epics/<name>/[0-9]*.md 2>/dev/null | wc -l)
+closed=$(grep -l '^status: closed' .claude/epics/<name>/[0-9]*.md 2>/dev/null | wc -l)
+progress=$((closed * 100 / total))
+sed -i.bak "/^progress:/c\\progress: ${progress}%" .claude/epics/<name>/epic.md
+rm .claude/epics/<name>/epic.md.bak
+```
 
 ---
 

@@ -1,6 +1,7 @@
 #!/bin/bash
 # Update checkboxes for all closed tasks in all epics
 # Marks task checkboxes as [x] in epic issue body when local task status is closed
+# Syncs acceptance criteria from task files to GitLab issue descriptions
 # Updates both GitLab and recalculates epic progress
 
 set -e
@@ -21,6 +22,42 @@ if [[ "$REPO" == "automazeio/ccpm" ]]; then
   echo "❌ Cannot update checkboxes in the CCPM template repository."
   exit 1
 fi
+
+# Function to sync task acceptance criteria to GitLab issue description
+sync_task_description() {
+  local task_file="$1"
+
+  if [[ ! -f "$task_file" ]]; then
+    return
+  fi
+
+  # Extract gitlab URL from frontmatter
+  local gitlab_url
+  gitlab_url=$(grep '^gitlab:' "$task_file" 2>/dev/null | sed 's|^gitlab: ||')
+
+  if [[ -z "$gitlab_url" ]]; then
+    return
+  fi
+
+  # Extract issue number from URL
+  local issue_num
+  issue_num=$(echo "$gitlab_url" | grep -oE '[0-9]+$' || echo "")
+
+  if [[ -z "$issue_num" ]]; then
+    return
+  fi
+
+  # Strip YAML frontmatter to get just the body
+  local body
+  body=$(awk '/^---/ { if (++fence == 2) { skip=0; next } else { skip=1; next } } skip { next } { print }' "$task_file")
+
+  if [[ -z "$body" ]]; then
+    return
+  fi
+
+  # Update GitLab issue description
+  glab issue update "$issue_num" --description "$body" 2>/dev/null
+}
 
 echo "🔄 Updating checkboxes for all closed tasks..."
 echo ""
@@ -78,6 +115,9 @@ for epic_dir in "$EPICS_DIR"/*/; do
         updated=true
       fi
     fi
+
+    # Sync task acceptance criteria to GitLab issue description
+    sync_task_description "$task_file"
   done
 
   # Update epic issue on GitLab if changes were made

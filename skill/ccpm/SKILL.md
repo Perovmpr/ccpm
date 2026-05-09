@@ -92,7 +92,17 @@ When tasks are completed and merged to main, they MUST be closed on GitLab:
 3. **Close issue**: `glab issue close <N>`
 4. **Update epic issue body**: Mark task checkbox as `[x]` in epic description
 5. **Recalculate epic progress**: `completed_tasks / total_tasks * 100%`
+6. **Sync acceptance criteria**: Task issue descriptions are automatically updated with acceptance criteria checkboxes from local task files via `update-checkboxes.sh` or `sync.sh`
 
 See `references/sync.md` → "Closing an Issue" section for full procedure.
 
 **Without this step**, tasks remain open on GitLab even though code is shipped, creating confusion about actual project status.
+
+## Acceptance Criteria Sync
+
+As acceptance criteria are completed during implementation:
+1. Update checkboxes in local task file (e.g., `12.md`)
+2. Run `bash references/scripts/update-checkboxes.sh` to sync all task descriptions to GitLab
+3. OR run `bash references/scripts/sync.sh` for the specific epic
+
+Task issue descriptions are synchronized from the local markdown body (after YAML frontmatter) to GitLab automatically.

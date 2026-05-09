@@ -51,6 +51,48 @@ check_repo() {
   fi
 }
 
+# Sync acceptance criteria checkboxes from local task file to GitLab issue description
+sync_task_issue_description() {
+  local task_file="$1"
+  local epic_name="$2"
+
+  if [[ ! -f "$task_file" ]]; then
+    return
+  fi
+
+  # Extract task number from filename
+  local task_num
+  task_num=$(basename "$task_file" .md)
+
+  # Check if task has a gitlab URL
+  local gitlab_url
+  gitlab_url=$(grep '^gitlab:' "$task_file" 2>/dev/null | sed 's|^gitlab: ||')
+
+  if [[ -z "$gitlab_url" ]]; then
+    return
+  fi
+
+  # Extract task number from gitlab URL
+  local issue_num
+  issue_num=$(echo "$gitlab_url" | grep -oE '[0-9]+$' || echo "")
+
+  if [[ -z "$issue_num" ]]; then
+    return
+  fi
+
+  # Strip YAML frontmatter to get just the body
+  local body
+  body=$(awk '/^---/ { if (++fence == 2) { skip=0; next } else { skip=1; next } } skip { next } { print }' "$task_file")
+
+  if [[ -z "$body" ]]; then
+    return
+  fi
+
+  # Update GitLab issue description with the body
+  glab issue update "$issue_num" --description "$body" 2>/dev/null
+  log_success "Synced task #$task_num acceptance criteria to GitLab issue #$issue_num"
+}
+
 # Update checkboxes for closed tasks in an epic
 update_epic_checkboxes() {
   local epic_dir="$1"
@@ -129,6 +171,9 @@ update_epic_checkboxes() {
       updated_body=$(echo "$updated_body" | sed "s/- \[ \] #$task_num:/- [x] #$task_num:/g")
       log_success "Marking task #$task_num as done: $task_name"
     fi
+
+    # Also sync the task issue description with acceptance criteria
+    sync_task_issue_description "$task_file" "$epic_name"
   done
 
   # Update epic issue on GitLab
